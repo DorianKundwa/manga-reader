@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-from openai import OpenAI
 """
 ElevenLabs removed; narration now uses Tortoise TTS via tortoise_wrapper.
 """
@@ -37,7 +36,6 @@ from prompts import (
 from citation_processing import extract_text_and_citations, extract_script
 from movie_director import make_movie
 
-from openai import APIError, RateLimitError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_dotenv()  # Load environment variables from .env file
@@ -60,18 +58,14 @@ def write_text_to_file(movie_script, manga, volume_number):
 def retry_api_call(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
-    except RateLimitError as e:
-        print(f"Rate limit reached. Retrying in a moment...")
-        raise e
-    except APIError as e:
-        if "rate limit" in str(e).lower():
-            print(f"API error related to rate limit. Retrying...")
-            raise RateLimitError(str(e))
+    except Exception as e:
+        # Generic retryable error handling now that OpenAI-specific errors are removed
+        print("Transient error during API call:", str(e))
         raise e
 
 async def main(volume_number, manga, text_only=False):
-    # Initialize OpenAI client with API key
-    client = OpenAI()
+    # OpenAI client removed; vision functions now use ShareCaptioner under the hood
+    client = None
     # Narration client no longer needed; Tortoise is invoked inside movie_director via wrapper
     narration_client = None
 
@@ -292,7 +286,6 @@ async def main(volume_number, manga, text_only=False):
             movie_script[i]["important_panels"] = ip
             panel_tokens += tokens
 
-    ELEVENLABS_PRICE_PER_CHARACTER = 0.0003
     print(
         "Tokens for extracting profiles and chapters:",
         important_page_tokens,
