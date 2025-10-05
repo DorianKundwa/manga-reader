@@ -25,23 +25,17 @@ async def make_movie(movie_script, manga, volume_number, narration_client):
 
 # Function to generate and update movie script with narrations
 async def add_narrations_to_script(script, client):
-    semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
+    # Replace ElevenLabs with Tortoise TTS wrapper (synchronous). We'll run in thread executor.
+    from tortoise_wrapper import synthesize_to_bytes
+
+    semaphore = asyncio.Semaphore(2)  # Limit concurrency; Tortoise is heavy
 
     async def fetch_narration(entry):
         async with semaphore:
-            audio_bytes_io = BytesIO()
-            # Since convert is an async generator, we use async for to iterate over it
-            async for audio_bytes in client.text_to_speech.convert(
-                text=entry["text"],
-                voice_id="pNInz6obpgDQGcFmaJgB",  # Replace with your chosen voice ID
-            ):
-                audio_bytes_io.write(audio_bytes)
-            # After collecting all bytes, we can optionally seek to the start
-            audio_bytes_io.seek(0)
-            # Assign the BytesIO object to the entry's "narration" field
-            entry["narration"] = audio_bytes_io
-            # Print the length of bytes after writing all chunks
-            print("got bytes:", audio_bytes_io.getbuffer().nbytes)
+            loop = asyncio.get_running_loop()
+            bio = await loop.run_in_executor(None, synthesize_to_bytes, entry["text"], None)
+            entry["narration"] = bio
+            print("got bytes:", bio.getbuffer().nbytes)
 
     await asyncio.gather(*[fetch_narration(entry) for entry in script])
 

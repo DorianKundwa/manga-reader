@@ -10,3 +10,5 @@ torch
 opencv-python
 scikit-image
 tenacity
+transformers
+tortoise-tts

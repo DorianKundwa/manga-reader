@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 from openai import OpenAI
-from elevenlabs.client import AsyncElevenLabs
+"""
+ElevenLabs removed; narration now uses Tortoise TTS via tortoise_wrapper.
+"""
 import asyncio
 import json
 import os
@@ -70,10 +72,8 @@ def retry_api_call(func, *args, **kwargs):
 async def main(volume_number, manga, text_only=False):
     # Initialize OpenAI client with API key
     client = OpenAI()
-    # Only initialize ElevenLabs client if we're not in text-only mode
+    # Narration client no longer needed; Tortoise is invoked inside movie_director via wrapper
     narration_client = None
-    if not text_only:
-        narration_client = AsyncElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
     print("Extracting all pages from the volume...")
     volume_scaled_and_unscaled = extract_all_pages_as_images(
@@ -319,23 +319,7 @@ async def main(volume_number, manga, text_only=False):
         "${:,.4f}".format(VISION_PRICE_PER_TOKEN * (total_gpt_tokens)),
     )
     
-    if not text_only:
-        narration_script = extract_script(movie_script)
-        print(
-            "Total elevenlabs characters:",
-            len(narration_script),
-            " | ",
-            "${:,.4f}".format(ELEVENLABS_PRICE_PER_CHARACTER * (len(narration_script))),
-        )
-        print(
-            "GRAND TOTAL COST",
-            " | ",
-            "${:,.4f}".format(
-                VISION_PRICE_PER_TOKEN * (total_gpt_tokens)
-                + ELEVENLABS_PRICE_PER_CHARACTER * (len(narration_script))
-            ),
-        )
-    else:
+    if text_only:
         print(
             "GRAND TOTAL COST (GPT only)",
             " | ",
